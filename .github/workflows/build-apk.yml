@@ -13,6 +13,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -39,6 +40,36 @@ jobs:
 
       - name: Extract project ZIP
         run: unzip -q Arsheef-Aghani-Source.zip -d source
+
+      - name: Fix Java and Kotlin target compatibility
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          root = Path("source/arsheef-aghani")
+          files = [
+              p for p in root.rglob("build.gradle*")
+              if p.is_file()
+          ]
+
+          changed = 0
+          for p in files:
+              original = p.read_text()
+              updated = original.replace(
+                  "JavaVersion.VERSION_1_8",
+                  "JavaVersion.VERSION_17"
+              )
+              updated = updated.replace(
+                  "VERSION_1_8",
+                  "VERSION_17"
+              )
+              if updated != original:
+                  p.write_text(updated)
+                  print(f"Updated: {p}")
+                  changed += 1
+
+          print(f"Gradle files updated: {changed}")
+          PY
 
       - name: Build debug APK
         working-directory: source/arsheef-aghani
